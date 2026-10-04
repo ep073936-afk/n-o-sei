@@ -34,7 +34,9 @@ export function createPushRouter({ config, store }) {
   );
 
   router.post("/subscribe", async (req, res) => {
-    const subscription = req.body?.subscription;
+    const rawSubscription = req.body?.subscription ?? req.body;
+    const subscription = rawSubscription && typeof rawSubscription === "object" ? rawSubscription : null;
+
     if (!subscription || !subscription.endpoint || !subscription.keys || !subscription.keys.p256dh || !subscription.keys.auth) {
       return res.status(400).json({ ok: false, message: "Subscription inválida." });
     }

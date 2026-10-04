@@ -132,12 +132,15 @@ export function usePush() {
         applicationServerKey: urlBase64ToUint8Array(nextKey),
       });
 
+      const payload = pushSubscription.toJSON();
       const response = await fetch("/api/push/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          endpoint: pushSubscription.endpoint,
-          keys: pushSubscription.toJSON().keys,
+          subscription: {
+            endpoint: payload.endpoint,
+            keys: payload.keys,
+          },
         }),
       });
 
