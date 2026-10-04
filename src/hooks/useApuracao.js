@@ -2,51 +2,60 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { API_URL, POLL_MS } from "../config";
 
 const initialState = {
-  status: API_URL ? "loading" : "unconfigured", // unconfigured | loading | ready | error
+  status: "loading",
   data: null,
   updatedAt: null,
   error: null,
 };
 
-/**
- * Busca os dados de apuração e atualiza sozinho a cada POLL_MS.
- * Sem VITE_APURACAO_API_URL, não faz nenhuma requisição.
- */
 export function useApuracao() {
   const [state, setState] = useState(initialState);
   const controllerRef = useRef(null);
 
   const refresh = useCallback(async () => {
-    if (!API_URL) return;
-
     controllerRef.current?.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
 
     try {
-      const res = await fetch(API_URL, {
+      setState((prev) => ({ ...prev, status: "loading", error: null }));
+      const response = await fetch(API_URL, {
         signal: controller.signal,
         headers: { Accept: "application/json" },
+        cache: "no-store",
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setState({ status: "ready", data, updatedAt: new Date(), error: null });
-    } catch (err) {
-      if (err.name === "AbortError") return;
-      setState((prev) => ({ ...prev, status: "error", error: err.message }));
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const payload = await response.json();
+      const nextState = {
+        status: payload.status === "error" ? "error" : payload.status === "waiting" ? "waiting" : "ready",
+        data: payload,
+        updatedAt: payload.updatedAt ? new Date(payload.updatedAt) : null,
+        error: payload.error ?? null,
+      };
+
+      setState(nextState);
+    } catch (error) {
+      if (error.name === "AbortError") return;
+      setState((prev) => ({
+        ...prev,
+        status: "error",
+        error: error.message || "Não foi possível consultar a fonte oficial.",
+      }));
     }
   }, []);
 
   useEffect(() => {
-    if (!API_URL) return undefined;
-
     refresh();
-    const id = setInterval(() => {
-      if (!document.hidden) refresh(); // não consulta com a aba em segundo plano
+    const timer = setInterval(() => {
+      if (!document.hidden) refresh();
     }, POLL_MS);
 
     return () => {
-      clearInterval(id);
+      clearInterval(timer);
       controllerRef.current?.abort();
     };
   }, [refresh]);

@@ -1,7 +1,20 @@
 import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
-// Sem @vitejs/plugin-react: o esbuild já compila JSX com o runtime automático,
-// então não é preciso `import React` em cada arquivo.
 export default defineConfig({
-  esbuild: { jsx: "automatic" },
+  plugins: [react()],
+  server: {
+    host: "0.0.0.0",
+    port: 5173,
+    proxy: {
+      "/api": {
+        target: "http://localhost:3000",
+        changeOrigin: true,
+      },
+    },
+  },
+  preview: {
+    host: "0.0.0.0",
+    port: 4173,
+  },
 });
