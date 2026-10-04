@@ -9,6 +9,8 @@ npm run build
 npm run dev
 ```
 
+O mapa eleitoral usa uma base vetorial real em GeoJSON das UFs do Brasil com renderização em MapLibre GL JS via `react-map-gl`.
+
 Em seguida, em outro terminal:
 
 ```bash
