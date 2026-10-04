@@ -1,0 +1,149 @@
+/* Tema "noite de apuração": sobrescreve styles.css sem mexer nos componentes. */
+:root {
+  --p: #040b1a;
+  --i: #eaf0fc;
+  --m: #9fb0cc;
+  --line: #1c2e50;
+  --glass: rgba(255, 255, 255, 0.05);
+  --glass-b: rgba(255, 255, 255, 0.12);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background:
+    radial-gradient(900px 500px at 85% -5%, #0b3a8a55, transparent 60%),
+    radial-gradient(700px 500px at 0% 40%, #5a8f0f22, transparent 60%),
+    var(--p);
+  background-attachment: fixed;
+}
+
+/* Cabeçalho translúcido e fixo */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(4, 11, 26, 0.72);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--glass-b);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+nav b { box-shadow: 0 0 18px #c5f33355; }
+
+/* Hero com aurora animada */
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: none;
+  padding-top: 84px;
+}
+.hero::before,
+.hero::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  z-index: 0;
+  animation: float 14s ease-in-out infinite alternate;
+}
+.hero::before { width: 420px; height: 420px; right: -80px; top: -60px; background: #1267ed88; }
+.hero::after { width: 320px; height: 320px; left: -90px; bottom: -120px; background: #c5f33333; animation-delay: -6s; }
+.hero > * { position: relative; z-index: 1; }
+.hero .eyebrow {
+  display: inline-block;
+  padding: 6px 12px;
+  border: 1px solid #c5f33355;
+  border-radius: 999px;
+  background: #c5f3330f;
+}
+h1 { text-shadow: 0 6px 40px #0b3a8a; }
+h1 em {
+  background: linear-gradient(90deg, var(--l), #7df9c8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Cartões de vidro */
+.status,
+.waiting,
+.region-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-b);
+  backdrop-filter: blur(10px);
+  border-radius: 18px;
+  box-shadow: 0 20px 50px #00000040;
+}
+.status { margin-top: -44px; position: relative; z-index: 2; }
+.title button {
+  background: linear-gradient(135deg, var(--b), #3a8bff);
+  border-radius: 12px;
+  min-height: 44px;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 8px 24px #075bea66;
+}
+.title button:hover:not(:disabled) { transform: translateY(-2px); }
+aside { background: #075bea1f; border-radius: 0 12px 12px 0; }
+.metrics i { background: #ffffff1a; border-radius: 99px; overflow: hidden; position: relative; }
+.metrics i::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 35%;
+  background: linear-gradient(90deg, transparent, var(--l), transparent);
+  animation: slide 2.2s linear infinite;
+}
+
+/* Esqueleto com brilho */
+.skeleton i {
+  border-radius: 12px;
+  background: linear-gradient(100deg, #ffffff0d 30%, #ffffff22 50%, #ffffff0d 70%) 0 0 / 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+.waiting a { color: var(--l); }
+
+/* Regional */
+.regional { background: linear-gradient(180deg, transparent, #0a1d3f80); }
+.map {
+  border-radius: 22px;
+  background: radial-gradient(circle at 50% 40%, #0f2f66, #071c3d);
+  border: 1px solid var(--glass-b);
+  box-shadow: 0 20px 50px #00000050;
+}
+.outline {
+  fill: #1a4e91;
+  stroke: var(--l);
+  filter: drop-shadow(0 0 8px #c5f33355);
+}
+.region-card {
+  border-top: 1px solid var(--glass-b);
+  overflow: hidden;
+  transition: transform 0.2s, border-color 0.2s;
+}
+.region-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--l), var(--b));
+}
+.region-card:hover { transform: translateY(-4px); border-color: #c5f33366; }
+.region-card small { color: #ffffff30; font-size: 26px; }
+
+footer { background: #030814; border-top: 1px solid var(--glass-b); }
+
+@keyframes float { to { transform: translate(30px, 24px) scale(1.08); } }
+@keyframes shimmer { to { background-position: -200% 0; } }
+@keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+
+@media (max-width: 800px) {
+  .hero { padding-top: 56px; }
+  .status { margin-top: -32px; border-radius: 16px; }
+  .title { flex-direction: column; align-items: stretch; gap: 14px; }
+  .title button { width: 100%; }
+  .map { padding: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero::before, .hero::after, .metrics i::after, .skeleton i { animation: none; }
+}

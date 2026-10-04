@@ -1,96 +1,93 @@
 import { useMemo } from "react";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
-import { GEO_URL, REGIONS } from "../config";
+import { GEO_UF_URL } from "../config";
+import { getCandidateColor, getCandidateColorWithAlpha } from "../data/colors";
+import { UFS } from "../data/ufs";
 
 const PROJECTION_CONFIG = { center: [-54, -14], scale: 690 };
 
-const REGION_COLORS = {
-  Norte: "#3fa9a5",
-  Nordeste: "#7dd67d",
-  "Centro-Oeste": "#ffc857",
-  Sudeste: "#6299f7",
-  Sul: "#c5f333",
-};
+export default function BrazilMap({ data, selectedUf = "SP", onSelectUf }) {
+  const stateEntries = useMemo(() => {
+    const states = [];
+    for (const uf of UFS) {
+      const ufData = data?.ufs?.[uf.sigla] || null;
+      const leader = ufData?.candidatos?.slice().sort((a, b) => Number(b.votos || 0) - Number(a.votos || 0))[0] || null;
+      states.push({ ...uf, ufData, leader });
+    }
+    return states;
+  }, [data]);
 
-export default function BrazilMap({ regions = [], selectedRegion = REGIONS[0], onSelectRegion }) {
-  const statusMap = useMemo(
-    () =>
-      Object.fromEntries(
-        regions.map((region) => [region.name, region.urnasApuradasPercent ?? 0]),
-      ),
-    [regions],
-  );
-
-  const palette = REGIONS.map((region) => ({
-    name: region,
-    color: REGION_COLORS[region] || "#dfe8f7",
-    value: statusMap[region] ?? 0,
-  }));
-
-  const selectedColor = REGION_COLORS[selectedRegion] || "#1f6ae5";
+  const renderFill = (ufSigla) => {
+    const item = stateEntries.find((entry) => entry.sigla === ufSigla);
+    if (!item?.ufData) return "#1a4e91";
+    const pct = Number(item.ufData.pctApurado || 0);
+    const leader = item.leader;
+    if (!leader) return "#1a4e91";
+    const color = getCandidateColor(leader, 0);
+    const alpha = item.ufData.status === "totalizada" ? 1 : Math.max(0.35, Math.min(0.7, pct / 100));
+    return item.ufData.status === "totalizada" ? color : getCandidateColorWithAlpha(leader, 0, alpha);
+  };
 
   return (
-    <figure className="map-panel">
+    <figure className="map-panel map">
       <div className="map-head">
         <div>
           <p className="eyebrow">Visão territorial</p>
-          <h3>Brasil por região</h3>
+          <h3>Brasil por UF</h3>
         </div>
-        <span>{selectedRegion}</span>
+        <span>{selectedUf}</span>
       </div>
 
-      <div className="map-legend" aria-label="Legenda das regiões">
-        {palette.map((item) => (
-          <button
-            key={item.name}
-            type="button"
-            className="legend-item"
-            aria-label={`Exibir ${item.name}`}
-            onClick={() => onSelectRegion?.(item.name)}
-          >
-            <span style={{ background: item.color }} aria-hidden="true" />
-            {item.name}
-          </button>
-        ))}
+      <div className="map-legend" aria-label="Legenda das UFs">
+        <span className="legend-item"><span style={{ background: "#1a4e91" }} aria-hidden="true" />Sem dados</span>
+        <span className="legend-item"><span style={{ background: "#c5f333" }} aria-hidden="true" />Em apuração</span>
+        <span className="legend-item"><span style={{ background: "#7df9c8" }} aria-hidden="true" />Encerrada</span>
       </div>
 
       <ComposableMap
         projection="geoMercator"
         projectionConfig={PROJECTION_CONFIG}
-        aria-label="Mapa do Brasil"
+        aria-label="Mapa do Brasil por estado"
         role="img"
+        className="map-svg"
       >
-        <Geographies geography={GEO_URL}>
+        <Geographies geography={GEO_UF_URL}>
           {({ geographies }) =>
-            geographies.map((geo) => (
-              <Geography
-                key={geo.rsmKey}
-                geography={geo}
-                className="outline"
-                style={{
-                  default: { fill: selectedColor, stroke: "#d5f588", strokeWidth: 1 },
-                  hover: { fill: "#d9f45e", stroke: "#d5f588", strokeWidth: 1 },
-                  pressed: { fill: "#d9f45e", stroke: "#d5f588", strokeWidth: 1 },
-                }}
-                tabIndex={0}
-                onClick={() => onSelectRegion?.(selectedRegion)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onSelectRegion?.(selectedRegion);
-                  }
-                }}
-              />
-            ))
+            geographies.map((geo) => {
+              const sigla = geo.properties?.sigla || "";
+              const fill = renderFill(sigla);
+              const isSelected = sigla === selectedUf;
+
+              return (
+                <Geography
+                  key={geo.rsmKey}
+                  geography={geo}
+                  className="outline"
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`${geo.properties?.name || sigla}, ${data?.ufs?.[sigla]?.pctApurado ?? 0}% apurado, líder: ${data?.ufs?.[sigla]?.candidatos?.[0]?.nomeUrna || "Aguardando"}`}
+                  onClick={() => onSelectUf?.(sigla)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onSelectUf?.(sigla);
+                    }
+                  }}
+                  style={{
+                    default: { fill, stroke: isSelected ? "#c5f333" : "#dfe8f7", strokeWidth: isSelected ? 2 : 1, cursor: "pointer" },
+                    hover: { fill: "#d9f45e", stroke: "#c5f333", strokeWidth: 2 },
+                    pressed: { fill: "#d9f45e", stroke: "#c5f333", strokeWidth: 2 },
+                  }}
+                />
+              );
+            })
           }
         </Geographies>
       </ComposableMap>
 
-      <figcaption>
-        Contorno geográfico real do Brasil com estrutura pronta para regionalizar os dados oficiais.
-      </figcaption>
       <div className="map-foot">
-        Base cartográfica: IBGE <b>● {selectedRegion}</b>
+        <span>Mapa por UF</span>
+        <b>{selectedUf}</b>
       </div>
     </figure>
   );

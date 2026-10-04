@@ -1,13 +1,23 @@
-import { Suspense, lazy, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import StatusPanel from "./components/StatusPanel";
 import RegionCard from "./components/RegionCard";
 import NotificationToggle from "./components/NotificationToggle";
+import { CargoTabs } from "./components/CargoTabs";
+import { UfPanel } from "./components/UfPanel";
 import { REGIONS, TSE_URL } from "./config";
 import { useApuracao } from "./hooks/useApuracao";
+import { UFS, REGION_ORDER } from "./data/ufs";
 
 const BrazilMap = lazy(() => import("./components/BrazilMap"));
+
+function getHashCargo() {
+  const hash = window.location.hash.replace("#/", "").replace("#", "");
+  return ["presidente", "governador", "senador", "deputado-federal", "deputado-estadual"].includes(hash)
+    ? hash
+    : "presidente";
+}
 
 const EMPTY_DATA = REGIONS.map((name) => ({
   name,
@@ -16,32 +26,53 @@ const EMPTY_DATA = REGIONS.map((name) => ({
   eleitorado: null,
   comparecimento: null,
   abstencao: null,
+  leader: "—",
 }));
 
 export default function App() {
-  const { status, data, updatedAt, error, refresh } = useApuracao();
-  const [selectedRegion, setSelectedRegion] = useState(REGIONS[0]);
+  const [cargo, setCargo] = useState(getHashCargo);
+  const [selectedUf, setSelectedUf] = useState("SP");
+  const { status, data, updatedAt, error, refresh } = useApuracao(cargo, 1);
+
+  useEffect(() => {
+    window.location.hash = `/${cargo}`;
+  }, [cargo]);
 
   const regions = useMemo(() => {
-    if (!data?.regions || !Array.isArray(data.regions)) {
+    if (!data?.ufs || typeof data.ufs !== "object") {
       return EMPTY_DATA;
     }
 
-    return REGIONS.map((name) => {
-      const match = data.regions.find((item) => item.name.toLowerCase() === name.toLowerCase()) || {};
+    const summaryByRegion = Object.fromEntries(REGIONS.map((name) => [name, { region: name, values: [], leader: "—" }]));
+    Object.entries(data.ufs).forEach(([sigla, ufData]) => {
+      const uf = UFS.find((entry) => entry.sigla === sigla);
+      if (!uf) return;
+      const entry = summaryByRegion[uf.regiao];
+      if (!entry) return;
+      entry.values.push({ sigla, ...ufData });
+    });
+
+    return REGION_ORDER.map((regionName) => {
+      const entry = summaryByRegion[regionName] || { values: [] };
+      const filledValues = entry.values.filter((item) => typeof item.pctApurado === "number");
+      const pct = filledValues.length ? filledValues.reduce((sum, item) => sum + Number(item.pctApurado || 0), 0) / filledValues.length : null;
+      const firstLeader = filledValues[0]?.candidatos?.[0]?.nomeUrna || "—";
+
       return {
-        name,
-        status: match.status || "waiting",
-        urnasApuradasPercent: match.urnasApuradasPercent ?? null,
-        eleitorado: match.eleitorado ?? null,
-        comparecimento: match.comparecimento ?? null,
-        abstencao: match.abstencao ?? null,
+        name: regionName,
+        status: pct == null ? "waiting" : "ready",
+        urnasApuradasPercent: pct,
+        eleitorado: null,
+        comparecimento: null,
+        abstencao: null,
+        leader: firstLeader,
       };
     });
   }, [data]);
 
-  const activeRegion = regions.find((region) => region.name === selectedRegion) || regions[0];
-  const globalPercent = typeof data?.urnasApuradasPercent === "number" ? data.urnasApuradasPercent : null;
+  const globalPercent = data?.nacional?.pctApurado ?? null;
+  const activeRegion = regions[0] || EMPTY_DATA[0];
+  const currentState = data?.ufs?.[selectedUf] || null;
 
   return (
     <div id="top">
@@ -52,7 +83,7 @@ export default function App() {
         <strong>Última atualização</strong>
         <span>{updatedAt ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(updatedAt) : "Aguardando"}</span>
         <span className="status-strip__percent">
-          {globalPercent == null ? "0%" : `${globalPercent}%`} apurado
+          {globalPercent == null ? "Aguardando apuração" : `${globalPercent.toFixed(1)}%`} apurado
         </span>
       </div>
 
@@ -76,72 +107,19 @@ export default function App() {
           </div>
         </section>
 
+        <div className="cargo-area" aria-live="polite">
+          <CargoTabs cargo={cargo} onChange={(nextCargo) => setCargo(nextCargo)} />
+        </div>
+
         <StatusPanel status={status} updatedAt={updatedAt} onRefresh={refresh} data={data} />
-
-        <section id="alertas" className="section alerts-section" aria-labelledby="alertas-title">
-          <p className="eyebrow">Alertas</p>
-          <h2 id="alertas-title">Receba avisos da apuração</h2>
-          <div className="alert-card">
-            <NotificationToggle />
-          </div>
-        </section>
-
-        <section className="section" aria-labelledby="national-title">
-          <p className="eyebrow">Presidência da República</p>
-          <h2 id="national-title">Apuração nacional</h2>
-
-          <div className="national-card">
-            <div className="national-card__content">
-              <p className="eyebrow">Lista oficial</p>
-              <h3>
-                {status === "ready" && data?.urnasApuradasPercent != null
-                  ? "Apuração publicada pela Justiça Eleitoral"
-                  : status === "loading"
-                    ? "Carregando dados oficiais"
-                    : status === "error"
-                      ? "Falha na consulta oficial"
-                      : "Dados ainda não publicados"}
-              </h3>
-              <p>
-                {status === "ready"
-                  ? `A apuração oficial está em andamento e já registra ${data.urnasApuradasPercent ?? 0}% de urnas apuradas.`
-                  : status === "error"
-                    ? error || "A fonte oficial respondeu com erro. A próxima tentativa será feita automaticamente."
-                    : "Candidatos, fotos e resultados serão mostrados somente após a publicação oficial do TSE."}
-              </p>
-              <a href={TSE_URL} target="_blank" rel="noreferrer">
-                Consultar portal Resultados do TSE ↗
-              </a>
-            </div>
-
-            <div className="skeleton" aria-hidden="true">
-              {status === "loading" ? (
-                <>
-                  <i />
-                  <i />
-                  <i />
-                </>
-              ) : (
-                <div className="placeholder-card">
-                  <strong>{globalPercent == null ? "0%" : `${globalPercent}%`}</strong>
-                  <span>urnas apuradas</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
 
         <section className="section regional" aria-labelledby="regional-title">
           <p className="eyebrow">Recorte territorial</p>
-          <h2 id="regional-title">Apuração por região</h2>
+          <h2 id="regional-title">Apuração por UF</h2>
 
           <div className="regional-grid">
             <Suspense fallback={<div className="map-placeholder">Carregando mapa…</div>}>
-              <BrazilMap
-                regions={regions}
-                selectedRegion={selectedRegion}
-                onSelectRegion={setSelectedRegion}
-              />
+              <BrazilMap data={data} selectedUf={selectedUf} onSelectUf={setSelectedUf} />
             </Suspense>
 
             <div className="cards" aria-label="Lista de regiões">
@@ -152,7 +130,7 @@ export default function App() {
                   index={index}
                   value={region}
                   active={region.name === activeRegion.name}
-                  onClick={() => setSelectedRegion(region.name)}
+                  onClick={() => setSelectedUf("SP")}
                 />
               ))}
             </div>
@@ -160,23 +138,32 @@ export default function App() {
 
           <div className="region-detail" aria-live="polite">
             <div>
-              <p className="eyebrow">Região selecionada</p>
-              <h3>{activeRegion.name}</h3>
+              <p className="eyebrow">Estado selecionado</p>
+              <h3>{selectedUf}</h3>
             </div>
             <div className="region-detail__stats">
               <span>
-                <strong>{activeRegion.urnasApuradasPercent == null ? "Aguardando" : `${activeRegion.urnasApuradasPercent}%`}</strong>
-                urnas apuradas
+                <strong>{currentState?.pctApurado == null ? "Aguardando" : `${Number(currentState.pctApurado).toFixed(1)}%`}</strong>
+                seções apuradas
               </span>
               <span>
-                <strong>{activeRegion.eleitorado ?? "—"}</strong>
-                eleitorado
+                <strong>{currentState?.candidatos?.[0]?.nomeUrna || "—"}</strong>
+                líder
               </span>
             </div>
           </div>
         </section>
+
+        <section id="alertas" className="section alerts-section" aria-labelledby="alertas-title">
+          <p className="eyebrow">Alertas</p>
+          <h2 id="alertas-title">Receba avisos da apuração</h2>
+          <div className="alert-card">
+            <NotificationToggle />
+          </div>
+        </section>
       </main>
 
+      <UfPanel ufSigla={selectedUf} data={data} onClose={() => setSelectedUf("SP")} />
       <Footer />
       <nav className="bottom-nav" aria-label="Navegação inferior">
         <a href="#top" className="active">Início</a>

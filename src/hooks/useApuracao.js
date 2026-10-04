@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { API_URL, POLL_MS } from "../config";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { API_URL, POLL_MS, USE_MOCK } from "../config";
+import { mockApuracao } from "../data/mock.js";
+import { normalizar } from "../data/adapter.js";
 
 const initialState = {
   status: "loading",
@@ -8,9 +10,16 @@ const initialState = {
   error: null,
 };
 
-export function useApuracao() {
+function formatUpdatedAt(dateValue) {
+  if (!dateValue) return null;
+  const parsed = dateValue instanceof Date ? dateValue : new Date(dateValue);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+export function useApuracao(cargo = "presidente", turno = 1) {
   const [state, setState] = useState(initialState);
   const controllerRef = useRef(null);
+  const cacheKey = useMemo(() => `${cargo}:${turno}`, [cargo, turno]);
 
   const refresh = useCallback(async () => {
     controllerRef.current?.abort();
@@ -19,7 +28,21 @@ export function useApuracao() {
 
     try {
       setState((prev) => ({ ...prev, status: "loading", error: null }));
-      const response = await fetch(API_URL, {
+
+      if (USE_MOCK) {
+        const mock = { ...mockApuracao, cargo, turno, status: "ready" };
+        const normalized = normalizar(mock, cargo);
+        setState({
+          status: normalized.status === "ready" ? "ready" : "waiting",
+          data: normalized,
+          updatedAt: formatUpdatedAt(normalized.atualizadoEm),
+          error: null,
+        });
+        return;
+      }
+
+      const url = `${API_URL}?cargo=${encodeURIComponent(cargo)}&turno=${encodeURIComponent(turno)}`;
+      const response = await fetch(url, {
         signal: controller.signal,
         headers: { Accept: "application/json" },
         cache: "no-store",
@@ -30,11 +53,12 @@ export function useApuracao() {
       }
 
       const payload = await response.json();
+      const normalized = normalizar(payload, cargo);
       const nextState = {
-        status: payload.status === "error" ? "error" : payload.status === "waiting" ? "waiting" : "ready",
-        data: payload,
-        updatedAt: payload.updatedAt ? new Date(payload.updatedAt) : null,
-        error: payload.error ?? null,
+        status: normalized.status === "ready" ? "ready" : normalized.status === "error" ? "error" : normalized.status === "waiting" ? "waiting" : "loading",
+        data: normalized,
+        updatedAt: formatUpdatedAt(normalized.atualizadoEm),
+        error: normalized.status === "error" ? normalized.error || "Falha na consulta oficial." : null,
       };
 
       setState(nextState);
@@ -46,19 +70,21 @@ export function useApuracao() {
         error: error.message || "Não foi possível consultar a fonte oficial.",
       }));
     }
-  }, []);
+  }, [cargo, turno]);
 
   useEffect(() => {
-    refresh();
+    void refresh();
     const timer = setInterval(() => {
-      if (!document.hidden) refresh();
+      if (!document.hidden) {
+        void refresh();
+      }
     }, POLL_MS);
 
     return () => {
       clearInterval(timer);
       controllerRef.current?.abort();
     };
-  }, [refresh]);
+  }, [cacheKey, refresh]);
 
   return { ...state, refresh };
 }
