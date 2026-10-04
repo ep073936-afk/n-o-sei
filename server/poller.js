@@ -5,11 +5,12 @@ import webPush from "web-push";
 
 const THRESHOLDS = [25, 50, 75, 100];
 
-function normalizeState(payload) {
+function normalizeState(payload, cargo = "presidente") {
   const raw = payload && typeof payload === "object" ? payload : {};
   const source = raw.data && typeof raw.data === "object" ? raw.data : raw;
 
   const state = {
+    cargo: typeof raw.cargo === "string" ? raw.cargo : typeof source.cargo === "string" ? source.cargo : cargo,
     status: typeof source.status === "string" ? source.status.toLowerCase() : "unconfigured",
     updatedAt: source.updatedAt || raw.updatedAt || new Date().toISOString(),
     urnasApuradasPercent:
@@ -136,11 +137,19 @@ export function createPoller({ config, store, stateRef }) {
       }
 
       const payload = await response.json();
-      const nextState = normalizeState(payload);
-      const previousState = stateRef.current || { status: "unconfigured" };
+      const cargo = typeof payload?.cargo === "string" ? payload.cargo : "presidente";
+      const nextState = normalizeState(payload, cargo);
+      const previousState = stateRef.current?.default || stateRef.current || { status: "unconfigured" };
       const shouldSend = shouldNotify(previousState, nextState);
 
-      stateRef.current = nextState;
+      stateRef.current = {
+        ...(stateRef.current || {}),
+        default: nextState,
+        byCargo: {
+          ...(stateRef.current?.byCargo || {}),
+          [cargo]: nextState,
+        },
+      };
 
       if (shouldSend) {
         const lastSent = await readLastSent();
