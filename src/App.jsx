@@ -75,7 +75,7 @@ export default function App() {
   const currentState = data?.ufs?.[selectedUf] || null;
 
   return (
-    <div id="top">
+    <div id="top" className="dashboard-shell">
       <Header />
 
       <div className="status-strip" aria-live="polite">
@@ -87,87 +87,104 @@ export default function App() {
         </span>
       </div>
 
-      <main className="app-shell">
-        <section className="hero">
-          <div className="hero-copy">
-            <p className="eyebrow">● Central de apuração</p>
-            <h1>
-              Brasil decide.
-              <br />
-              <em>Você acompanha.</em>
-            </h1>
-            <p>Resultados somente quando publicados pela Justiça Eleitoral.</p>
+      <div className="app-layout">
+        <aside className="sidebar" aria-label="Navegação por seções">
+          <div className="sidebar__sticky">
+            <p className="eyebrow">Seções</p>
+            <nav className="sidebar-nav">
+              <a href="#inicio" className="active">Início</a>
+              <a href="#status">Status</a>
+              <a href="#regional">Regiões</a>
+              <a href="#alertas">Alertas</a>
+            </nav>
           </div>
+        </aside>
 
-          <div className="hero-actions">
-            <a className="primary-button" href={TSE_URL} target="_blank" rel="noreferrer">
-              Consultar TSE
-            </a>
-            <NotificationToggle />
-          </div>
-        </section>
-
-        <div className="cargo-area" aria-live="polite">
-          <CargoTabs cargo={cargo} onChange={(nextCargo) => setCargo(nextCargo)} />
-        </div>
-
-        <StatusPanel status={status} updatedAt={updatedAt} onRefresh={refresh} data={data} />
-
-        <section className="section regional" aria-labelledby="regional-title">
-          <p className="eyebrow">Recorte territorial</p>
-          <h2 id="regional-title">Apuração por UF</h2>
-
-          <div className="regional-grid">
-            <Suspense fallback={<div className="map-placeholder">Carregando mapa…</div>}>
-              <BrazilMap data={data} selectedUf={selectedUf} onSelectUf={setSelectedUf} />
-            </Suspense>
-
-            <div className="cards" aria-label="Lista de regiões">
-              {regions.map((region, index) => (
-                <RegionCard
-                  key={region.name}
-                  name={region.name}
-                  index={index}
-                  value={region}
-                  active={region.name === activeRegion.name}
-                  onClick={() => setSelectedUf("SP")}
-                />
-              ))}
+        <main className="app-shell">
+          <section id="inicio" className="panel-page hero">
+            <div className="hero-copy">
+              <p className="eyebrow">● Central de apuração</p>
+              <h1>
+                Brasil decide.
+                <br />
+                <em>Você acompanha.</em>
+              </h1>
+              <p>Resultados somente quando publicados pela Justiça Eleitoral.</p>
             </div>
-          </div>
 
-          <div className="region-detail" aria-live="polite">
-            <div>
-              <p className="eyebrow">Estado selecionado</p>
-              <h3>{selectedUf}</h3>
+            <div className="hero-actions">
+              <a className="primary-button" href={TSE_URL} target="_blank" rel="noreferrer">
+                Consultar TSE
+              </a>
+              <NotificationToggle />
             </div>
-            <div className="region-detail__stats">
-              <span>
-                <strong>{currentState?.pctApurado == null ? "Aguardando" : `${Number(currentState.pctApurado).toFixed(1)}%`}</strong>
-                seções apuradas
-              </span>
-              <span>
-                <strong>{currentState?.candidatos?.[0]?.nomeUrna || "—"}</strong>
-                líder
-              </span>
-            </div>
-          </div>
-        </section>
+          </section>
 
-        <section id="alertas" className="section alerts-section" aria-labelledby="alertas-title">
-          <p className="eyebrow">Alertas</p>
-          <h2 id="alertas-title">Receba avisos da apuração</h2>
-          <div className="alert-card">
-            <NotificationToggle />
-          </div>
-        </section>
-      </main>
+          <section id="status" className="panel-page">
+            <div className="cargo-area" aria-live="polite">
+              <CargoTabs cargo={cargo} onChange={(nextCargo) => setCargo(nextCargo)} />
+            </div>
+
+            <StatusPanel status={status} updatedAt={updatedAt} onRefresh={refresh} data={data} />
+          </section>
+
+          <section id="regional" className="panel-page section regional" aria-labelledby="regional-title">
+            <p className="eyebrow">Recorte territorial</p>
+            <h2 id="regional-title">Apuração por UF</h2>
+
+            <div className="regional-grid">
+              <Suspense fallback={<div className="map-placeholder">Carregando mapa…</div>}>
+                <BrazilMap data={data} selectedUf={selectedUf} onSelectUf={setSelectedUf} />
+              </Suspense>
+
+              <div className="cards" aria-label="Lista de regiões">
+                {regions.map((region, index) => (
+                  <RegionCard
+                    key={region.name}
+                    name={region.name}
+                    index={index}
+                    value={region}
+                    active={region.name === activeRegion.name}
+                    onClick={() => setSelectedUf("SP")}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="region-detail" aria-live="polite">
+              <div>
+                <p className="eyebrow">Estado selecionado</p>
+                <h3>{selectedUf}</h3>
+              </div>
+              <div className="region-detail__stats">
+                <span>
+                  <strong>{currentState?.pctApurado == null ? "Aguardando" : `${Number(currentState.pctApurado).toFixed(1)}%`}</strong>
+                  seções apuradas
+                </span>
+                <span>
+                  <strong>{currentState?.candidatos?.[0]?.nomeUrna || "—"}</strong>
+                  líder
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <section id="alertas" className="panel-page section alerts-section" aria-labelledby="alertas-title">
+            <p className="eyebrow">Alertas</p>
+            <h2 id="alertas-title">Receba avisos da apuração</h2>
+            <div className="alert-card">
+              <NotificationToggle />
+            </div>
+          </section>
+        </main>
+      </div>
 
       <UfPanel ufSigla={selectedUf} data={data} onClose={() => setSelectedUf("SP")} />
       <Footer />
       <nav className="bottom-nav" aria-label="Navegação inferior">
-        <a href="#top" className="active">Início</a>
-        <a href="#regional-title">Regiões</a>
+        <a href="#inicio" className="active">Início</a>
+        <a href="#status">Status</a>
+        <a href="#regional">Regiões</a>
         <a href="#alertas">Alertas</a>
       </nav>
     </div>

@@ -1,0 +1,69 @@
+/* Correções de contraste e encaixe. Importar POR ÚLTIMO (depois de theme.css). */
+
+/* 1) Títulos escuros em fundo escuro ("Receba avisos da apuração", "Norte") */
+:root h1,
+:root h2,
+:root h3,
+:root h4 {
+  color: var(--i, #eaf0fc) !important;
+}
+:root h1 em {
+  color: transparent !important; /* mantém o degradê do destaque do hero */
+}
+:root .region-card p,
+:root .waiting p:not(.eyebrow),
+:root .map figcaption {
+  color: var(--m, #9fb0cc);
+}
+
+/* 2) Cartões das regiões: rótulos sobrepostos ("COMPARECIMENTO" x "ABSTENÇÃO") */
+.region-card > * { min-width: 0; }
+.region-card dl {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+  gap: 16px 14px;
+}
+.region-card dt {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+  color: var(--m, #9fb0cc);
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+.region-card dd { font-size: 14px; color: var(--i, #eaf0fc); }
+
+/* 3) Mapa/estado: preenchimento igual ao fundo some com o contorno */
+.map svg { background: #071c3d; border-radius: 14px; }
+.map .rsm-geography {
+  fill: #2f6fb8;
+  stroke: #cfe0f7;
+  stroke-width: 0.7px;
+  vector-effect: non-scaling-stroke;
+  filter: none;
+}
+.map .rsm-geography:hover,
+.map .rsm-geography:focus-visible {
+  fill: #4a8bd6;
+  stroke: #c5f333;
+  stroke-width: 1.4px;
+}
+
+/* 4) Botão "Fechar": claro com texto escuro destoa do tema; versão consistente */
+button[aria-label*="echar" i],
+button.fechar,
+button.close,
+.sheet button.close {
+  min-height: 44px;
+  padding: 0 18px;
+  background: var(--glass, rgba(255, 255, 255, 0.05));
+  color: var(--i, #eaf0fc);
+  border: 1px solid var(--glass-b, rgba(255, 255, 255, 0.18));
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+button[aria-label*="echar" i]:hover,
+button.fechar:hover,
+button.close:hover {
+  border-color: #c5f333;
+}

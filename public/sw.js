@@ -8,7 +8,7 @@ const APP_SHELL = [
   "/icons/icon-maskable-512.png",
   "/icons/apple-touch-icon-180.png",
 ];
-const CACHE_NAME = "apuracao-brasil-shell-v3";
+const CACHE_NAME = "apuracao-brasil-shell-v4";
 
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
