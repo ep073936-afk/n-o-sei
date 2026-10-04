@@ -877,7 +877,7 @@ h1 em {
   gap: 1rem;
   margin-top: 1.2rem;
   padding: 1.25rem 1.2rem;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 1.2rem;
   background: linear-gradient(180deg, rgba(8, 26, 48, 0.96), rgba(17, 43, 78, 0.98));
   box-shadow: 0 18px 42px rgba(4, 19, 39, 0.12);
@@ -957,25 +957,83 @@ h1 em {
   gap: 0.75rem;
 }
 
-.apuracao-notice__metrics > div {
-  display: grid;
-  gap: 0.2rem;
+.apuracao-notice__metric {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
   padding: 0.85rem 0.9rem;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 0.9rem;
   background: rgba(255, 255, 255, 0.04);
 }
 
-.apuracao-notice__metrics small {
+.metric-icon {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 0.75rem;
+  background: rgba(197, 243, 51, 0.12);
+  color: var(--l);
+  font-weight: 900;
+  font-size: 0.95rem;
+}
+
+.metric-icon--percent {
+  background: rgba(118, 180, 255, 0.15);
+  color: #dfeeff;
+}
+
+.apuracao-notice__metric small {
+  display: block;
   color: rgba(255, 255, 255, 0.72);
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
-.apuracao-notice__metrics strong {
+.apuracao-notice__metric strong {
   color: #fff;
   font-size: clamp(1.2rem, 3vw, 1.8rem);
+}
+
+.apuracao-progress {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.apuracao-progress__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.apuracao-progress__meta strong {
+  color: #fff;
+  font-size: 0.8rem;
+}
+
+.apuracao-progress__bar {
+  height: 0.7rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.apuracao-progress__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--l) 0%, #7fc4ff 45%, #d2f86f 100%);
 }
 
 .uf-select-label {
@@ -1015,16 +1073,37 @@ h1 em {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.9rem;
   padding: 0.9rem 1rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0.9rem;
   background: rgba(255, 255, 255, 0.04);
 }
 
-.apuracao-notice__row > div {
+.row-icon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.7rem;
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+
+.row-icon--president {
+  background: rgba(95, 161, 255, 0.18);
+  color: #dfeeff;
+}
+
+.row-icon--governor {
+  background: rgba(117, 198, 168, 0.18);
+  color: #d6fff1;
+}
+
+.row-copy {
   display: grid;
   gap: 0.2rem;
+  flex: 1;
 }
 
 .apuracao-notice__row span {

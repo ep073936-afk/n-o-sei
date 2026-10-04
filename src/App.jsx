@@ -207,7 +207,7 @@ export default function App() {
             <div className="apuracao-notice apuracao-notice--institutional" aria-live="polite">
               <div className="apuracao-notice__header">
                 <div className="apuracao-notice__title">
-                  <p className="eyebrow">Monitoramento</p>
+                  <p className="eyebrow">Monitoramento operacional</p>
                   <h3>Apuração por UF</h3>
                 </div>
                 <span className={`apuracao-pill apuracao-pill--${selectedStatePercent == null ? "waiting" : Number(selectedStatePercent) >= 100 ? "done" : Number(selectedStatePercent) <= 5 ? "start" : "live"}`}>
@@ -216,13 +216,29 @@ export default function App() {
               </div>
 
               <div className="apuracao-notice__metrics">
-                <div>
-                  <small>Estado</small>
-                  <strong>{selectedUf}</strong>
+                <div className="apuracao-notice__metric">
+                  <div className="metric-icon metric-icon--state" aria-hidden="true">◉</div>
+                  <div>
+                    <small>Estado</small>
+                    <strong>{selectedUf}</strong>
+                  </div>
                 </div>
-                <div>
-                  <small>Apuração</small>
-                  <strong>{selectedStatePercent == null ? "Aguardando" : `${Number(selectedStatePercent).toFixed(1)}%`}</strong>
+                <div className="apuracao-notice__metric">
+                  <div className="metric-icon metric-icon--percent" aria-hidden="true">%</div>
+                  <div>
+                    <small>Apuração</small>
+                    <strong>{selectedStatePercent == null ? "Aguardando" : `${Number(selectedStatePercent).toFixed(1)}%`}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className="apuracao-progress" aria-label="Progresso da apuração do estado selecionado">
+                <div className="apuracao-progress__meta">
+                  <span>Progresso da apuração</span>
+                  <strong>{selectedStatePercent == null ? "0%" : `${Number(selectedStatePercent).toFixed(1)}%`}</strong>
+                </div>
+                <div className="apuracao-progress__bar">
+                  <span style={{ width: `${selectedStatePercent == null ? 0 : Math.min(Number(selectedStatePercent), 100)}%` }} />
                 </div>
               </div>
 
@@ -237,14 +253,16 @@ export default function App() {
 
               <div className="apuracao-notice__rows">
                 <div className="apuracao-notice__row">
-                  <div>
+                  <div className="row-icon row-icon--president" aria-hidden="true">P</div>
+                  <div className="row-copy">
                     <span>Presidente</span>
                     <strong>{cargo === "presidente" ? (selectedStatePercent == null ? "Aguardando" : `${Number(selectedStatePercent).toFixed(1)}%`) : "Aguardando"}</strong>
                   </div>
                   <em>{cargo === "presidente" ? "Nacional" : "Em análise"}</em>
                 </div>
                 <div className="apuracao-notice__row">
-                  <div>
+                  <div className="row-icon row-icon--governor" aria-hidden="true">G</div>
+                  <div className="row-copy">
                     <span>Governador</span>
                     <strong>{cargo === "governador" ? (selectedStatePercent == null ? "Aguardando" : `${Number(selectedStatePercent).toFixed(1)}%`) : "Aguardando"}</strong>
                   </div>
