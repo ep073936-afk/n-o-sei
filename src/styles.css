@@ -260,6 +260,11 @@ svg {
 
 .panel-page {
   scroll-margin-top: 6rem;
+  min-height: 72vh;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: var(--shadow);
 }
 
 .hero {
@@ -879,6 +884,7 @@ h1 em {
     grid-template-columns: 1fr;
     width: min(100%, calc(100% - 1rem));
     padding-top: 0.75rem;
+    margin-top: 0;
   }
 
   .sidebar {
@@ -887,6 +893,7 @@ h1 em {
 
   .sidebar__sticky {
     position: static;
+    top: 0;
     padding: 0.75rem;
   }
 
@@ -899,11 +906,19 @@ h1 em {
     justify-content: center;
     white-space: nowrap;
   }
+
+  .panel-page {
+    min-height: 62vh;
+  }
 }
 
 @media (max-width: 640px) {
   .sidebar-nav {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .panel-page {
+    min-height: 50vh;
   }
 
   .hero {
@@ -973,7 +988,9 @@ h1 em {
 }
 
 .brazil-state.is-selected {
-  filter: drop-shadow(0 8px 18px rgba(18, 59, 99, 0.12));
+  filter: drop-shadow(0 8px 18px rgba(18, 59, 99, 0.2));
+  stroke: #123b63;
+  stroke-width: 2.2;
 }
 
 .brazil-state.is-hovered {

@@ -36,7 +36,12 @@ export default function App() {
 
   useEffect(() => {
     window.location.hash = `/${cargo}`;
+    window.scrollTo(0, 0);
   }, [cargo]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const regions = useMemo(() => {
     if (!data?.ufs || typeof data.ufs !== "object") {
