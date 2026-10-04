@@ -14,6 +14,7 @@ import { createStore } from "./store.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..");
+const publicPath = path.join(rootDir, "public");
 const distPath = path.join(rootDir, "dist");
 
 const app = express();
@@ -51,6 +52,22 @@ app.use("/api", createApuracaoRouter({ stateRef }));
 app.use("/api/push", createPushRouter({ config, store }));
 
 const hasDistBuild = fs.existsSync(path.join(distPath, "index.html"));
+
+if (fs.existsSync(publicPath)) {
+  app.use(
+    express.static(publicPath, {
+      index: false,
+      setHeaders(res, filePath) {
+        const relativePath = path.relative(publicPath, filePath);
+        if (relativePath === "brazil-ufs.geojson") {
+          res.setHeader("Cache-Control", "public, max-age=86400");
+          return;
+        }
+        res.setHeader("Cache-Control", "no-cache");
+      },
+    }),
+  );
+}
 
 if (hasDistBuild) {
   app.use(

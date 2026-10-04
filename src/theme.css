@@ -106,14 +106,29 @@ aside { background: #075bea1f; border-radius: 0 12px 12px 0; }
 .regional { background: linear-gradient(180deg, transparent, #0a1d3f80); }
 .map {
   border-radius: 22px;
-  background: radial-gradient(circle at 50% 40%, #0f2f66, #071c3d);
+  background: #091f3c;
   border: 1px solid var(--glass-b);
-  box-shadow: 0 20px 50px #00000050;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
 }
-.outline {
-  fill: #1a4e91;
-  stroke: var(--l);
-  filter: drop-shadow(0 0 8px #c5f33355);
+.map-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #0a1d3a;
+  border-radius: 1rem;
+}
+.map-label {
+  fill: #edf6ff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  paint-order: stroke;
+  stroke: rgba(9, 20, 35, 0.8);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  text-transform: uppercase;
+  user-select: none;
+  pointer-events: none;
 }
 .region-card {
   border-top: 1px solid var(--glass-b);
@@ -127,8 +142,8 @@ aside { background: #075bea1f; border-radius: 0 12px 12px 0; }
   height: 3px;
   background: linear-gradient(90deg, var(--l), var(--b));
 }
-.region-card:hover { transform: translateY(-4px); border-color: #c5f33366; }
-.region-card small { color: #ffffff30; font-size: 26px; }
+.region-card:hover { transform: translateY(-4px); border-color: rgba(197, 243, 51, 0.5); }
+.region-card small { color: rgba(255,255,255,0.38); font-size: 26px; }
 
 footer { background: #030814; border-top: 1px solid var(--glass-b); }
 

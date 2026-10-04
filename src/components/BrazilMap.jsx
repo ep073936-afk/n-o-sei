@@ -1,12 +1,14 @@
 import { Component, memo, useCallback, useMemo, useState } from "react";
+import { geoCentroid } from "d3-geo";
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
 import { GEO_UF_URL } from "../config";
 import { getCandidateColor, getCandidateColorWithAlpha } from "../data/colors";
 import { REGION_ORDER, UF_BY_SIGLA, UFS } from "../data/ufs";
 
 const SMALL_UFS = new Set(["DF", "SE", "AL", "RN", "PB", "PE", "ES", "RJ"]);
-const MAP_CENTER = [-54, -14.5];
-const MAP_SCALE = 720;
+const MAP_CENTER = [0, -14];
+const MAP_SCALE = 900;
+const MAP_TRANSLATE = [400, 400];
 
 function toPercent(value) {
   const parsed = Number(value);
@@ -14,7 +16,7 @@ function toPercent(value) {
 }
 
 function stateFillColor(sigla, ufData, isSelected, isDimmed) {
-  const fallback = "#1a4e91";
+  const fallback = "#1d4d93";
 
   if (!ufData) {
     return fallback;
@@ -30,7 +32,7 @@ function stateFillColor(sigla, ufData, isSelected, isDimmed) {
     return solidColor;
   }
 
-  const opacity = Math.max(0.38, Math.min(0.82, toPercent(ufData.pctApurado) / 100));
+  const opacity = Math.max(0.45, Math.min(0.84, toPercent(ufData.pctApurado) / 100));
   const tinted = getCandidateColorWithAlpha(leader, 0, opacity);
 
   if (isSelected || !isDimmed) {
@@ -64,7 +66,7 @@ class MapErrorBoundary extends Component {
               <h3>Não foi possível carregar o mapa</h3>
             </div>
           </div>
-          <p>Houve um erro ao carregar a geometria dos estados. Tente novamente.</p>
+          <p>Houve um erro ao carregar a geometria das UFs. Tente novamente.</p>
           <button
             type="button"
             className="primary-button"
@@ -88,19 +90,10 @@ class MapErrorBoundary extends Component {
 const BrazilMapInner = memo(function BrazilMapInner({ data, selectedUf = "SP", selectedRegion = "Sudeste", onSelectUf, onSelectRegion }) {
   const [viewMode, setViewMode] = useState("states");
   const [zoom, setZoom] = useState(1);
-  const [center, setCenter] = useState(MAP_CENTER);
+  const [center, setCenter] = useState([0, 0]);
   const [activeUf, setActiveUf] = useState(selectedUf);
   const [activeRegion, setActiveRegion] = useState(selectedRegion);
   const [showList, setShowList] = useState(false);
-
-  const statesByRegion = useMemo(
-    () =>
-      REGION_ORDER.reduce((accumulator, regionName) => {
-        accumulator[regionName] = UFS.filter((uf) => uf.regiao === regionName).map((uf) => uf.sigla);
-        return accumulator;
-      }, {}),
-    [],
-  );
 
   const selectedUfData = data?.ufs?.[activeUf] || null;
   const selectedRegionData = useMemo(
@@ -139,45 +132,6 @@ const BrazilMapInner = memo(function BrazilMapInner({ data, selectedUf = "SP", s
     [onSelectRegion, onSelectUf],
   );
 
-  const getGeographyStyle = useCallback(
-    (sigla) => {
-      const ufData = data?.ufs?.[sigla] || null;
-      const regionName = UF_BY_SIGLA[sigla]?.regiao || "";
-      const isSelected = viewMode === "states" ? sigla === activeUf : regionName === activeRegion;
-      const isDimmed =
-        viewMode === "states"
-          ? activeUf && sigla !== activeUf
-          : activeRegion && regionName !== activeRegion;
-      const fill = stateFillColor(sigla, ufData, isSelected, isDimmed);
-
-      return {
-        default: {
-          fill,
-          stroke: isSelected ? "#c5f333" : "rgba(255,255,255,0.7)",
-          strokeWidth: isSelected ? 2.3 : 1,
-          opacity: isDimmed ? 0.62 : 1,
-          cursor: "pointer",
-          transition: "all 120ms ease",
-        },
-        hover: {
-          fill,
-          stroke: "#c5f333",
-          strokeWidth: 2.4,
-          opacity: 1,
-          cursor: "pointer",
-        },
-        pressed: {
-          fill,
-          stroke: "#c5f333",
-          strokeWidth: 2.4,
-          opacity: 1,
-          cursor: "pointer",
-        },
-      };
-    },
-    [activeRegion, activeUf, data, viewMode],
-  );
-
   return (
     <figure className="map-panel map">
       <div className="map-head">
@@ -213,12 +167,21 @@ const BrazilMapInner = memo(function BrazilMapInner({ data, selectedUf = "SP", s
         <div className="map-zoom-controls" aria-label="Controles de zoom do mapa">
           <button type="button" aria-label="Aumentar zoom" onClick={() => setZoom((next) => Math.min(6, next + 0.5))}>+</button>
           <button type="button" aria-label="Diminuir zoom" onClick={() => setZoom((next) => Math.max(1, next - 0.5))}>−</button>
-          <button type="button" aria-label="Recentralizar mapa" onClick={() => { setZoom(1); setCenter(MAP_CENTER); }}>Recentrar</button>
+          <button
+            type="button"
+            aria-label="Recentralizar mapa"
+            onClick={() => {
+              setZoom(1);
+              setCenter([0, 0]);
+            }}
+          >
+            Recentrar
+          </button>
         </div>
       </div>
 
       <div className="map-legend" aria-label="Legenda das UFs">
-        <span className="legend-item"><span style={{ background: "#1a4e91" }} aria-hidden="true" />Sem dados</span>
+        <span className="legend-item"><span style={{ background: "#1d4d93" }} aria-hidden="true" />Sem dados</span>
         <span className="legend-item"><span style={{ background: "#d9f45e" }} aria-hidden="true" />Em apuração</span>
         <span className="legend-item"><span style={{ background: "#7df9c8" }} aria-hidden="true" />Totalizada</span>
       </div>
@@ -230,8 +193,14 @@ const BrazilMapInner = memo(function BrazilMapInner({ data, selectedUf = "SP", s
       </div>
 
       <ComposableMap
-        projection="geoMercator"
-        projectionConfig={{ center: MAP_CENTER, scale: MAP_SCALE }}
+        projection="geoConicEqualArea"
+        projectionConfig={{
+          parallels: [-2, -22],
+          rotate: [54, 0],
+          center: MAP_CENTER,
+          scale: MAP_SCALE,
+          translate: MAP_TRANSLATE,
+        }}
         width={800}
         height={800}
         className="map-svg"
@@ -249,91 +218,164 @@ const BrazilMapInner = memo(function BrazilMapInner({ data, selectedUf = "SP", s
             setZoom(nextZoom);
           }}
         >
-          <defs>
-            <pattern id="uf-pending-pattern" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-              <rect width="8" height="8" fill="rgba(255,255,255,0.08)" />
-              <line x1="0" x2="8" y1="0" y2="8" stroke="rgba(197, 243, 51, 0.7)" strokeWidth="1.2" />
-            </pattern>
-          </defs>
-
           <Geographies geography={GEO_UF_URL}>
-            {({ geographies }) =>
-              geographies.map((geo) => {
-                const sigla = geo.properties?.sigla || "";
-                const uf = UF_BY_SIGLA[sigla];
-                const ufData = data?.ufs?.[sigla] || null;
-                const regionName = uf?.regiao || "";
-                const isSelectedState = viewMode === "states" ? sigla === activeUf : regionName === activeRegion;
-                const isDimmed =
-                  viewMode === "states"
-                    ? activeUf && sigla !== activeUf
-                    : activeRegion && regionName !== activeRegion;
-                const isPending = Boolean(ufData && ufData.status !== "totalizada");
-                const fill = stateFillColor(sigla, ufData, isSelectedState, isDimmed);
-                const label = `${uf?.nome || sigla}, ${ufData?.pctApurado != null ? `${toPercent(ufData.pctApurado).toFixed(1)}%` : "Aguardando apuração"} apurado, líder: ${ufData?.candidatos?.[0]?.nomeUrna || "sem dados"}`;
+            {({ geographies }) => {
+              const orderedGeographies = [...geographies].sort((left, right) => {
+                const leftSigla = left.properties?.sigla ?? left.id ?? "";
+                const rightSigla = right.properties?.sigla ?? right.id ?? "";
+                const leftRegion = left.properties?.regiao ?? "";
+                const rightRegion = right.properties?.regiao ?? "";
+                const leftSelected = viewMode === "states" ? leftSigla === activeUf : leftRegion === activeRegion;
+                const rightSelected = viewMode === "states" ? rightSigla === activeUf : rightRegion === activeRegion;
 
-                return (
-                  <Geography
-                    key={geo.rsmKey}
-                    geography={geo}
-                    tabIndex={0}
-                    role="button"
-                    aria-label={label}
-                    aria-pressed={isSelectedState}
-                    className="uf-geography"
-                    onClick={() => {
-                      if (viewMode === "regions") {
-                        handleRegionSelect(regionName);
-                        return;
-                      }
-                      handleStateSelect(sigla);
-                    }}
-                    onDoubleClick={() => {
-                      if (!uf) return;
-                      setZoom((next) => Math.min(4, next + 1));
-                      setCenter(MAP_CENTER);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        if (viewMode === "regions") {
-                          handleRegionSelect(regionName);
-                          return;
-                        }
-                        handleStateSelect(sigla);
-                      }
+                if (leftSelected !== rightSelected) {
+                  return Number(rightSelected) - Number(leftSelected);
+                }
 
-                      if (event.key === "Escape") {
-                        event.preventDefault();
-                        setViewMode("states");
-                      }
-                    }}
-                    style={{
-                      default: {
-                        fill: isPending && !isSelectedState ? "url(#uf-pending-pattern)" : fill,
-                        stroke: isSelectedState ? "#c5f333" : "rgba(255,255,255,0.7)",
-                        strokeWidth: isSelectedState ? 2.5 : 1,
-                        opacity: isDimmed ? 0.62 : 1,
-                        cursor: "pointer",
-                      },
-                      hover: {
-                        fill: isPending ? "url(#uf-pending-pattern)" : fill,
-                        stroke: "#c5f333",
-                        strokeWidth: 2.4,
-                        opacity: 1,
-                      },
-                      pressed: {
-                        fill: isPending ? "url(#uf-pending-pattern)" : fill,
-                        stroke: "#c5f333",
-                        strokeWidth: 2.4,
-                        opacity: 1,
-                      },
-                    }}
-                    title={`${uf?.nome || sigla} • ${ufData?.pctApurado != null ? `${toPercent(ufData.pctApurado).toFixed(1)}%` : "Aguardando"} • ${ufData?.candidatos?.[0]?.nomeUrna || "sem dados"}`}
-                  />
-                );
-              })
-            }
+                if (viewMode === "regions") {
+                  if (leftRegion === activeRegion && rightRegion !== activeRegion) return 1;
+                  if (leftRegion !== activeRegion && rightRegion === activeRegion) return -1;
+                }
+
+                return leftSigla.localeCompare(rightSigla);
+              });
+
+              return (
+                <>
+                  {REGION_ORDER.flatMap((regionName) =>
+                    geographies
+                      .filter((geo) => (geo.properties?.regiao ?? "") === regionName)
+                      .map((geo) => {
+                        const isActiveRegion = regionName === activeRegion;
+                        return (
+                          <Geography
+                            key={`region-outline-${geo.properties?.sigla ?? geo.id}`}
+                            geography={geo}
+                            tabIndex={-1}
+                            style={{
+                              default: {
+                                fill: "transparent",
+                                stroke: isActiveRegion ? "#9ed5ff" : "rgba(171, 201, 244, 0.55)",
+                                strokeWidth: isActiveRegion ? 2.2 : 1.1,
+                                vectorEffect: "non-scaling-stroke",
+                                cursor: "default",
+                              },
+                              hover: {
+                                fill: "transparent",
+                                stroke: "#eaf4ff",
+                                strokeWidth: isActiveRegion ? 2.4 : 1.3,
+                                vectorEffect: "non-scaling-stroke",
+                              },
+                              pressed: {
+                                fill: "transparent",
+                                stroke: "#eaf4ff",
+                                strokeWidth: isActiveRegion ? 2.4 : 1.3,
+                                vectorEffect: "non-scaling-stroke",
+                              },
+                            }}
+                          />
+                        );
+                      }),
+                  )}
+
+                  {orderedGeographies.map((geo) => {
+                    const sigla = geo.properties?.sigla ?? geo.id ?? "";
+                    const uf = UF_BY_SIGLA[sigla];
+                    const ufData = data?.ufs?.[sigla] || null;
+                    const regionName = uf?.regiao || "";
+                    const isSelectedState = viewMode === "states" ? sigla === activeUf : regionName === activeRegion;
+                    const isDimmed =
+                      viewMode === "states"
+                        ? activeUf && sigla !== activeUf
+                        : activeRegion && regionName !== activeRegion;
+                    const isPending = Boolean(ufData && ufData.status !== "totalizada");
+                    const fill = stateFillColor(sigla, ufData, isSelectedState, isDimmed);
+                    const leaderboard = ufData?.candidatos?.[0]?.nomeUrna || "sem dados";
+                    const percent = ufData?.pctApurado != null ? `${toPercent(ufData.pctApurado).toFixed(1)}%` : "Aguardando apuração";
+                    const label = `${uf?.nome || sigla}, ${percent} apurado, líder: ${leaderboard}`;
+                    const centroid = geoCentroid(geo);
+
+                    return (
+                      <g key={`state-${sigla}`}>
+                        <Geography
+                          geography={geo}
+                          tabIndex={0}
+                          role="button"
+                          aria-label={label}
+                          aria-pressed={isSelectedState}
+                          className="uf-geography"
+                          onClick={() => {
+                            if (viewMode === "regions") {
+                              handleRegionSelect(regionName);
+                              return;
+                            }
+                            handleStateSelect(sigla);
+                          }}
+                          onDoubleClick={() => {
+                            if (!uf) return;
+                            setZoom((next) => Math.min(4, next + 1));
+                            setCenter([0, 0]);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              if (viewMode === "regions") {
+                                handleRegionSelect(regionName);
+                                return;
+                              }
+                              handleStateSelect(sigla);
+                            }
+
+                            if (event.key === "Escape") {
+                              event.preventDefault();
+                              setViewMode("states");
+                            }
+                          }}
+                          style={{
+                            default: {
+                              fill: isPending && !isSelectedState ? "rgba(197, 243, 51, 0.18)" : fill,
+                              stroke: isSelectedState ? "#f7fbff" : "#0b1d3a",
+                              strokeWidth: isSelectedState ? 1.8 : 0.6,
+                              opacity: isDimmed ? 0.72 : 1,
+                              cursor: "pointer",
+                              vectorEffect: "non-scaling-stroke",
+                              transition: "fill 140ms ease, stroke 140ms ease, stroke-width 140ms ease",
+                            },
+                            hover: {
+                              fill,
+                              stroke: "#f4f8ff",
+                              strokeWidth: isSelectedState ? 2.2 : 1.1,
+                              opacity: 1,
+                              vectorEffect: "non-scaling-stroke",
+                            },
+                            pressed: {
+                              fill,
+                              stroke: "#f4f8ff",
+                              strokeWidth: isSelectedState ? 2.2 : 1.1,
+                              opacity: 1,
+                              vectorEffect: "non-scaling-stroke",
+                            },
+                          }}
+                          title={`${uf?.nome || sigla} • ${percent} • ${leaderboard}`}
+                        />
+
+                        {zoom >= 1.15 && (
+                          <text
+                            x={centroid[0]}
+                            y={centroid[1]}
+                            textAnchor="middle"
+                            dominantBaseline="central"
+                            className="map-label"
+                          >
+                            {sigla}
+                          </text>
+                        )}
+                      </g>
+                    );
+                  })}
+                </>
+              );
+            }}
           </Geographies>
         </ZoomableGroup>
       </ComposableMap>

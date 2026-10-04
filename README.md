@@ -19,21 +19,24 @@ A API fica em `http://localhost:3000` e o front em `http://localhost:5173`.
 
 ## 2) GeoJSON das UFs e mapeamento região/UF
 
-O mapa usa o arquivo `public/brazil-ufs.geojson` como fonte da geometria das 27 UFs.
+O mapa usa o arquivo `public/brazil-ufs.geojson` como fonte da geometria real das 27 UFs do Brasil.
 
-- O arquivo deve ser um `FeatureCollection` do GeoJSON, com 27 features.
-- Cada feature precisa ter `properties.sigla` e `properties.name`.
+- Origem: repositório `giuliano-macedo/geodata-br-states` (malha de UFs do IBGE), adaptado para o formato usado pelo app.
+- Estrutura esperada: `FeatureCollection` com 27 features, cada feature com `properties.sigla`, `properties.nome` e `properties.regiao`.
 - A tabela de referência fica em `src/data/ufs.js` e define `sigla`, `nome` e `regiao`.
+- A sigla da UF é a chave única para ligar o mapa, os rótulos e o painel do estado.
+
+A geometria real foi simplificada para remover guias e detalhes redundantes, mantendo a forma e os limites estaduais reais, sem transformar o desenho em uma malha aproximada em quadriláteros.
 
 Para regenerar ou atualizar o GeoJSON das UFs:
 
-1. Baixe a geometria oficial do IBGE/GeoJSON em uma versão estadual.
-2. Normaliza as propriedades para manter `sigla` e `nome`.
-3. Salve o arquivo em `public/brazil-ufs.geojson`.
+1. Obtenha a base oficial do IBGE/GeoJSON de estados ou do projeto `giuliano-macedo/geodata-br-states`.
+2. Normalize as propriedades para manter `sigla`, `nome` e `regiao` com os mesmos valores usados em `src/data/ufs.js`.
+3. Salve o resultado em `public/brazil-ufs.geojson`.
 4. Confirme com:
 
 ```bash
-node -e "const fs=require('fs'); const g=JSON.parse(fs.readFileSync('public/brazil-ufs.geojson','utf8')); console.log(g.type, g.features.length, g.features[0].properties.sigla)"
+node -e "const fs=require('fs'); const g=JSON.parse(fs.readFileSync('public/brazil-ufs.geojson','utf8')); console.log({ type: g.type, features: g.features.length, first: g.features[0].properties.sigla })"
 ```
 
 Ao montar o mapa, a regra de associação é simples:
@@ -42,7 +45,7 @@ Ao montar o mapa, a regra de associação é simples:
 const region = UF_BY_SIGLA[sigla]?.regiao;
 ```
 
-Ou seja, a sigla da UF é a chave única e a região vem da tabela `src/data/ufs.js`.
+Ou seja, a tabela `src/data/ufs.js` continua sendo a referência de nomes e regiões, mas a geometria real passa a vir do GeoJSON em `public/brazil-ufs.geojson`.
 
 ## 3) Gerar chaves VAPID
 

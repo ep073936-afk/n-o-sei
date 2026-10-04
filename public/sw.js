@@ -2,13 +2,13 @@ const APP_SHELL = [
   "/",
   "/index.html",
   "/manifest.webmanifest",
-  "/brazil-topology.json",
+  "/brazil-ufs.geojson",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/icons/icon-maskable-512.png",
   "/icons/apple-touch-icon-180.png",
 ];
-const CACHE_NAME = "apuracao-brasil-shell-v2";
+const CACHE_NAME = "apuracao-brasil-shell-v3";
 
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);

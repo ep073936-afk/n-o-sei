@@ -3,7 +3,6 @@ export const TSE_URL = "https://resultados.tse.jus.br/";
 export const REGIONS = ["Norte", "Nordeste", "Centro-Oeste", "Sudeste", "Sul"];
 
 export const BASE_URL = import.meta.env.BASE_URL;
-export const GEO_URL = `${BASE_URL}brazil-topology.json`;
 export const GEO_UF_URL = `${BASE_URL}brazil-ufs.geojson`;
 
 export const API_URL = import.meta.env.VITE_APURACAO_API_URL || "/api/apuracao";
