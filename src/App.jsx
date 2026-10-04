@@ -78,6 +78,15 @@ export default function App() {
   const globalPercent = data?.nacional?.pctApurado ?? null;
   const activeRegion = regions[0] || EMPTY_DATA[0];
   const currentState = data?.ufs?.[selectedUf] || null;
+  const selectedStatePercent = currentState?.pctApurado ?? null;
+  const apuracaoStage =
+    selectedStatePercent == null
+      ? "Início da apuração"
+      : Number(selectedStatePercent) >= 100
+        ? "Fim da apuração"
+        : Number(selectedStatePercent) <= 5
+          ? "Início da apuração"
+          : "Apuração em andamento";
 
   return (
     <div id="top" className="dashboard-shell">
@@ -156,6 +165,28 @@ export default function App() {
               </div>
             </div>
 
+            <div className="state-selector" aria-labelledby="state-selector-title">
+              <div className="state-selector__header">
+                <p className="eyebrow" id="state-selector-title">Seleção rápida</p>
+                <span>{selectedUf}</span>
+              </div>
+
+              <div className="state-selector__list" aria-label="Lista de estados">
+                {UFS.map((uf) => (
+                  <button
+                    key={uf.sigla}
+                    type="button"
+                    className={selectedUf === uf.sigla ? "is-selected" : ""}
+                    aria-pressed={selectedUf === uf.sigla}
+                    onClick={() => setSelectedUf(uf.sigla)}
+                  >
+                    <strong>{uf.sigla}</strong>
+                    <span>{uf.nome}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="region-detail" aria-live="polite">
               <div>
                 <p className="eyebrow">Estado selecionado</p>
@@ -170,6 +201,55 @@ export default function App() {
                   <strong>{currentState?.candidatos?.[0]?.nomeUrna || "—"}</strong>
                   líder
                 </span>
+              </div>
+            </div>
+
+            <div className="apuracao-notice apuracao-notice--institutional" aria-live="polite">
+              <div className="apuracao-notice__header">
+                <div className="apuracao-notice__title">
+                  <p className="eyebrow">Monitoramento</p>
+                  <h3>Apuração por UF</h3>
+                </div>
+                <span className={`apuracao-pill apuracao-pill--${selectedStatePercent == null ? "waiting" : Number(selectedStatePercent) >= 100 ? "done" : Number(selectedStatePercent) <= 5 ? "start" : "live"}`}>
+                  {apuracaoStage}
+                </span>
+              </div>
+
+              <div className="apuracao-notice__metrics">
+                <div>
+                  <small>Estado</small>
+                  <strong>{selectedUf}</strong>
+                </div>
+                <div>
+                  <small>Apuração</small>
+                  <strong>{selectedStatePercent == null ? "Aguardando" : `${Number(selectedStatePercent).toFixed(1)}%`}</strong>
+                </div>
+              </div>
+
+              <div className="uf-select-wrap">
+                <label className="uf-select-label" htmlFor="uf-select">Selecionar UF</label>
+                <select id="uf-select" value={selectedUf} onChange={(event) => setSelectedUf(event.target.value)}>
+                  {UFS.map((uf) => (
+                    <option key={uf.sigla} value={uf.sigla}>{uf.sigla} — {uf.nome}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="apuracao-notice__rows">
+                <div className="apuracao-notice__row">
+                  <div>
+                    <span>Presidente</span>
+                    <strong>{cargo === "presidente" ? (selectedStatePercent == null ? "Aguardando" : `${Number(selectedStatePercent).toFixed(1)}%`) : "Aguardando"}</strong>
+                  </div>
+                  <em>{cargo === "presidente" ? "Nacional" : "Em análise"}</em>
+                </div>
+                <div className="apuracao-notice__row">
+                  <div>
+                    <span>Governador</span>
+                    <strong>{cargo === "governador" ? (selectedStatePercent == null ? "Aguardando" : `${Number(selectedStatePercent).toFixed(1)}%`) : "Aguardando"}</strong>
+                  </div>
+                  <em>{cargo === "governador" ? "Estadual" : "Em análise"}</em>
+                </div>
               </div>
             </div>
           </section>

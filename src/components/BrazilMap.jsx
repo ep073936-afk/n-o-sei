@@ -136,6 +136,8 @@ export default function BrazilMap({ data, selectedUf = "SP", onSelectUf }) {
           }}
           minZoom={2.3}
           maxZoom={7.2}
+          reuseMaps
+          style={{ width: "100%", height: "100%" }}
           mapStyle="https://demotiles.maplibre.org/style.json"
           interactiveLayerIds={["ufs-fill"]}
           onMouseMove={handleFeatureHover}
