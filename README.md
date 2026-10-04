@@ -17,7 +17,34 @@ npm run dev:server
 
 A API fica em `http://localhost:3000` e o front em `http://localhost:5173`.
 
-## 2) Gerar chaves VAPID
+## 2) GeoJSON das UFs e mapeamento região/UF
+
+O mapa usa o arquivo `public/brazil-ufs.geojson` como fonte da geometria das 27 UFs.
+
+- O arquivo deve ser um `FeatureCollection` do GeoJSON, com 27 features.
+- Cada feature precisa ter `properties.sigla` e `properties.name`.
+- A tabela de referência fica em `src/data/ufs.js` e define `sigla`, `nome` e `regiao`.
+
+Para regenerar ou atualizar o GeoJSON das UFs:
+
+1. Baixe a geometria oficial do IBGE/GeoJSON em uma versão estadual.
+2. Normaliza as propriedades para manter `sigla` e `nome`.
+3. Salve o arquivo em `public/brazil-ufs.geojson`.
+4. Confirme com:
+
+```bash
+node -e "const fs=require('fs'); const g=JSON.parse(fs.readFileSync('public/brazil-ufs.geojson','utf8')); console.log(g.type, g.features.length, g.features[0].properties.sigla)"
+```
+
+Ao montar o mapa, a regra de associação é simples:
+
+```js
+const region = UF_BY_SIGLA[sigla]?.regiao;
+```
+
+Ou seja, a sigla da UF é a chave única e a região vem da tabela `src/data/ufs.js`.
+
+## 3) Gerar chaves VAPID
 
 ```bash
 npm run vapid
